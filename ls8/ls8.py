@@ -5,7 +5,10 @@
 import sys
 from cpu import *
 
-cpu = CPU()
 
-cpu.load()
-cpu.run()
+if __name__ == "__main__":
+    print(sys.argv[0])
+    cpu = CPU()
+
+    cpu.load()
+    cpu.run()

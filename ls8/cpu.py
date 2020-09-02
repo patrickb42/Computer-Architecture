@@ -1,13 +1,23 @@
 """CPU functionality."""
 
 import sys
+from typing import List
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.ram: bytearray = bytearray(256)
+        self.reg: bytearray = bytearray(8)
+        # reg[5] IM or interrupt mask
+        # reg[6] IS or interrupt status
+        # reg[7] SP or stack pointer
+        self.pc: bytes = bytes() # program counter
+        self.ir: bytes = bytes() # instruction register
+        self.mar: bytes = bytes() # memory address register
+        self.mdr: bytes = bytes() # memory data register
+        self.fl: bytes = bytes() # flags bitfield 00000LGE
 
     def load(self):
         """Load a program into memory."""
@@ -30,6 +40,11 @@ class CPU:
             self.ram[address] = instruction
             address += 1
 
+    def ram_read(self, pc: bytes) -> bytes:
+        return bytes([self.ram.index(pc)])
+
+    def ram_write(self, value: bytes, pc: bytes) -> bytes:
+        self.ram.insert(int(pc), int(value))
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -51,8 +66,8 @@ class CPU:
             #self.fl,
             #self.ie,
             self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
+            self.ram_read(self.pc + b'x1'),
+            self.ram_read(self.pc + b'x2'),
         ), end='')
 
         for i in range(8):
