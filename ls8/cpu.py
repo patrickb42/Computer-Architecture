@@ -20,7 +20,7 @@ class CPU:
 
         self.commands = {
             0x00: self.no_op,
-            0x01: self.halt, # !!!!!!!!
+            0x01: self.halt,
             0x11: self.return_from_subroutine,
             0x13: self.return_from_interrupt_handler,
             0x45: self.push,
@@ -39,7 +39,7 @@ class CPU:
             0x65, # INC  1
             0x66, # DEC  1
             0x69, # NOT  1
-            0x82, # LDI  2 !!!!!!!
+            0x82: self.ldi,
             0x83, # LD   2
             0x84, # ST   2
             0xA0: self.add,
@@ -74,82 +74,107 @@ class CPU:
             super().__init__(message)
 
     def get_one(self) -> int:
+        return (,,1)
         pass
 
     def get_two(self) -> (int, int):
+        return (,,2)
         pass
 
     def no_op(self):
+        return 0
         pass
 
     def halt(self):
         raise HaltExcpetion('halted')
 
     def return_from_subroutine(self):
+        return 0
         pass
 
     def return_from_interrupt_handler(self):
+        return 0
         pass
 
     def push(self):
-        reg_a = self.get_one()
+        address, steps = self.get_one()
+        return steps
         pass
 
     def pop(self):
-        reg_a = self.get_one()
+        address, steps = self.get_one()
+        return steps
         pass
 
     def print_number(self, register: int):
-        reg_a = self.get_one()
-        print(self.reg[reg_a])
+        address, steps = self.get_one()
+        print(self.reg[address])
+        return steps
 
     def print_alpha(self, register: int):
-        reg_a = self.get_one()
-        print(chr(self.reg[reg_a]))
+        address, steps = self.get_one()
+        print(chr(self.reg[address]))
+        return steps
+
+    def ldi(self):
+        address, value, steps = self.get_two()
+        self.reg[address] = value # work on this? maybe incriment other things as well, maybe that's handled in get_two
+        return steps
 
     def add(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def sub(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def mul(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def div(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def mod(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def compare(self):
-        reg_a, reg_b = self.get_two()
+        address_a, address_b, steps = self.get_two()
+        return steps
         pass
 
     def bit_and(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def bit_or(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def bit_xor(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def bit_shift_left(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def bit_shift_right(self):
-        reg_a, reg_b = self.get_two()
-        self.alu('ADD', reg_a, reg_b)
+        address_a, address_b, steps = self.get_two()
+        self.alu('ADD', address_a, address_b)
+        return steps
 
     def load(self):
         """Load a program into memory."""
@@ -210,7 +235,7 @@ class CPU:
         self.pc = self.mar
         try:
             self.ir = self.ram_read(self.pc)
-            self.commands[self.ir]()
+            steps_taken = self.commands[self.ir]()
         except IndexError:
             return False
         except KeyError:
