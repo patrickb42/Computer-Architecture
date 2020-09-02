@@ -32,16 +32,16 @@ class CPU:
             0x46: self.pop,
             0x47: self.print_number,
             0x48: self.print_alpha,
-            0x50, # CALL 1
-            0x52, # INT  1
-            0x54, # JMP  1
-            0x55, # JEQ  1
-            0x56, # JNE  1
-            0x57, # JGT  1
-            0x58, # JLT  1
-            0x59, # JLE  1
-            0x5A, # JGE  1
-            0x65: lambda: self.alu('INC', self.get_next())
+            0x50: lambda _: _, # CALL 1 finish
+            0x52: lambda _: _, # INT  1 finish
+            0x54: self.jump,
+            0x55: self.jump_if_equal_to,
+            0x56: self.jump_if_not_equal_to,
+            0x57: self.jump_if_greater_than,
+            0x58: self.jump_if_less_than,
+            0x59: self.jump_if_less_than_or_equal_to,
+            0x5A: self.jump_if_greater_than_or_equal_to,
+            0x65: lambda: self.alu('INC', self.get_next()),
             0x66: lambda: self.alu('DEC', self.get_next()),
             0x69: lambda: self.alu('NOT', self.get_next()),
             0x82: self.ldi,
@@ -61,24 +61,24 @@ class CPU:
         }
 
         self.alu_ops = {
-            'INC': lambda address, _=None: self.reg[address] -= 1,
-            'DEC': lambda address, _=None: self.reg[address] += 1,
-            'NOT': lambda address, _=None: ~self.reg[address],
-            'ADD': lambda address_a, address_b: self.reg[address_a] += self.reg[address_b],
-            'SUB': lambda address_a, address_b: self.reg[address_a] -= self.reg[address_b],
-            'MUL': lambda address_a, address_b: self.reg[address_a] *= self.reg[address_b],
-            'DIV': lambda address_a, address_b: self.reg[address_a] /= self.reg[address_b],
-            'MOD': lambda address_a, address_b: self.reg[address_a] %= self.reg[address_b],
-            'CMP': lambda address_a, address_b: self.compare(address_a, address_b),
-            'AND': lambda address_a, address_b: self.reg[address_a] &= self.reg[address_b],
-            'OR': lambda address_a, address_b: self.reg[address_a] |= self.reg[address_b],
-            'XOR': lambda address_a, address_b: self.reg[address_a] ^= self.reg[address_b],
-            'SHL': lambda address_a, address_b: self.reg[address_a] << self.reg[address_b],
-            'SHR': lambda address_a, address_b: self.reg[address_a] >> self.reg[address_b],
+            'INC': self.increment,
+            'DEC': self.decrement,
+            'NOT': self.alu_not,
+            'ADD': self.add,
+            'SUB': self.subtract,
+            'MUL': self.multiply,
+            'DIV': self.divide,
+            'MOD': self.mod,
+            'CMP': self.compare,
+            'AND': self.bit_and,
+            'OR':  self.bit_or,
+            'XOR': self.bit_xor,
+            'SHL': self.shift_left,
+            'SHR': self.shift_right,
         }
 
     class HaltExcpetion(Exception):
-        __init__(self, message: str):
+        def __init__(self, message: str):
             super().__init__(message)
 
     def get_next(self) -> int:
@@ -86,42 +86,53 @@ class CPU:
         return self.ram_read(self.mar)
 
     def no_op(self):
-        return 0
         pass
 
     def halt(self):
-        raise HaltExcpetion('halted')
+        raise CPU.HaltExcpetion('halted')
 
     def return_from_subroutine(self):
-        return 0
         pass
 
     def return_from_interrupt_handler(self):
-        return 0
         pass
 
     def push(self):
-        address = self.get_next()
         pass
 
     def pop(self):
-        address = self.get_next()
         pass
 
-    def print_number(self, register: int):
+    def print_number(self):
         print(self.reg[self.get_next()])
 
-    def print_alpha(self, register: int):
+    def print_alpha(self):
         print(chr(self.reg[self.get_next()]))
 
-    def ldi(self):
-        self.reg[self.get_next()] = self.get_next() # work on this? maybe incriment other things as well, maybe that's handled in get_two
 
-    def ld(self):
-        self.reg[self.get_next()] = self.reg[self.get_next()]
+    def increment(self, address, _):
+        self.reg[address] += 1
 
-    def store(self):
-        pass
+    def decrement(self, address, _):
+        self.reg[address] -= 1
+
+    def alu_not(self, address, _):
+        self.reg[address] = ~self.reg[address]
+
+    def add(self, address_a, address_b):
+        self.reg[address_a] += self.reg[address_b]
+
+    def subtract(self, address_a, address_b):
+        self.reg[address_a] -= self.reg[address_b]
+
+    def multiply(self, address_a, address_b):
+        self.reg[address_a] *= self.reg[address_b]
+
+    def divide(self, address_a, address_b):
+        self.reg[address_a] /= self.reg[address_b]
+
+    def mod(self, address_a, address_b):
+        self.reg[address_a] %= self.reg[address_b]
 
     def compare(self, address_a, address_b):
         if self.reg[address_a] == self.reg[address_b]:
@@ -130,7 +141,60 @@ class CPU:
             self.fl = CPU.LESS_THAN_BIT_MASK
         else:
             self.fl = CPU.GREATER_THAN_BIT_MASK
+
+    def bit_and(self, address_a, address_b):
+        self.reg[address_a] &= self.reg[address_b]
+
+    def bit_or(self, address_a, address_b):
+        self.reg[address_a] |= self.reg[address_b]
+
+    def bit_xor(self, address_a, address_b):
+        self.reg[address_a] ^= self.reg[address_b]
+
+    def shift_left(self, address_a, address_b):
+        self.reg[address_a] <<= self.reg[address_b]
+
+    def shift_right(self, address_a, address_b):
+        self.reg[address_a] >>= self.reg[address_b]
+
+
+    def jump(self):
+        self.mar = self.reg[self.get_next()] - 1
+
+    def jump_if_equal_to(self):
+        if self.fl & CPU.EQUAL_TO_BIT_MASK:
+            self.jump()
+
+    def jump_if_not_equal_to(self):
+        if self.fl & ~CPU.EQUAL_TO_BIT_MASK:
+            self.jump()
+
+    def jump_if_greater_than(self):
+        if self.fl & CPU.GREATER_THAN_BIT_MASK:
+            self.jump()
+
+    def jump_if_less_than(self):
+        if self.fl & CPU.LESS_THAN_BIT_MASK:
+            self.jump()
+
+    def jump_if_less_than_or_equal_to(self):
+        if self.fl & (CPU.LESS_THAN_BIT_MASK | CPU.EQUAL_TO_BIT_MASK):
+            self.jump()
+
+    def jump_if_greater_than_or_equal_to(self):
+        if self.fl & (CPU.GREATER_THAN_BIT_MASK | CPU.EQUAL_TO_BIT_MASK):
+            self.jump()
+
+
+    def ldi(self):
+        self.reg[self.get_next()] = self.get_next()
+
+    def ld(self):
+        self.reg[self.get_next()] = self.reg[self.get_next()]
+
+    def store(self):
         pass
+
 
     def load(self):
         """Load a program into memory."""
@@ -159,11 +223,11 @@ class CPU:
     def ram_write(self, value: int, address: int):
         self.ram[address] = value
 
-    def alu(self, op, reg_a, reg_b):
+    def alu(self, op, reg_a, reg_b=None):
         """ALU operations."""
         try:
             self.alu_ops[op](reg_a, reg_b)
-        except KeyError
+        except KeyError:
             raise Exception("Unsupported ALU operation")
 
     def trace(self):
@@ -191,7 +255,7 @@ class CPU:
         self.pc = self.mar
         try:
             self.ir = self.ram_read(self.pc)
-            steps_taken = self.commands[self.ir]()
+            self.commands[self.ir]()
         except IndexError:
             return False
         except KeyError:
@@ -203,5 +267,5 @@ class CPU:
         try:
             while self.run_next_command():
                 pass
-        except HaltExcpetion:
+        except CPU.HaltExcpetion:
             pass
