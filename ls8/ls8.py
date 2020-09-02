@@ -7,7 +7,6 @@ from cpu import *
 
 
 if __name__ == "__main__":
-    print(sys.argv[0])
     cpu = CPU()
 
     cpu.load()
