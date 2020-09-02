@@ -14,6 +14,7 @@ class CPU:
         """Construct a new CPU."""
         self.ram: List[int] = [0] * 256
         self.reg: List[int] = [0] * 8
+        self.reg[7] = 0xF4
         # reg[5] IM or interrupt mask
         # reg[6] IS or interrupt status
         # reg[7] SP or stack pointer
@@ -202,6 +203,16 @@ class CPU:
     def store(self):
         pass
 
+
+    def copy(self):
+        result = CPU()
+        result.reg = self.reg[:]
+        result.mar = self.mar
+        result.mdr = self.mdr
+        result.pc = self.pc
+        result.ir = self.ir
+        result.fl = self.fl
+        return result
 
     def load(self):
         """Load a program into memory."""
