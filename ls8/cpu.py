@@ -5,6 +5,42 @@ from typing import List
 
 class CPU:
     """Main CPU class."""
+    commands = {
+        0x00, # NOP  0
+        0x01, # HLT  0
+        0x11, # RET  0
+        0x13, # IRET 0
+        0x45, # PUSH 1
+        0x46, # POP  1
+        0x47, # PRN  1
+        0x48, # PRA  1
+        0x50, # CALL 1
+        0x52, # INT  1
+        0x54, # JMP  1
+        0x55, # JEQ  1
+        0x56, # JNE  1
+        0x57, # JGT  1
+        0x58, # JLT  1
+        0x59, # JLE  1
+        0x5A, # JGE  1
+        0x65, # INC  1
+        0x66, # DEC  1
+        0x69, # NOT  1
+        0x82, # LDI  2
+        0x83, # LD   2
+        0x84, # ST   2
+        0xA0, # ADD  2
+        0xA1, # SUB  2
+        0xA2, # MUL  2
+        0xA3, # DIV  2
+        0xA4, # MOD  2
+        0xA7, # CMP  2
+        0xA8, # AND  1
+        0xAA, # OR   2
+        0xAB, # XOR  2
+        0xAC, # SHL  2
+        0xAD, # SHR  2
+    }
 
     def __init__(self):
         """Construct a new CPU."""
@@ -13,8 +49,8 @@ class CPU:
         # reg[5] IM or interrupt mask
         # reg[6] IS or interrupt status
         # reg[7] SP or stack pointer
-        self.pc: int = 0 # program counter
-        self.ir: int = 0 # instruction register
+        self.pc: int = 0 # program counter address
+        self.ir: int = 0 # instruction register data
         self.mar: int = 0 # memory address register
         self.mdr: int = 0 # memory data register
         self.fl: int = 0 # flags bitfield 00000LGE
@@ -40,11 +76,11 @@ class CPU:
             self.ram[address] = instruction
             address += 1
 
-    def ram_read(self, pc: int) -> int:
-        return self.ram[pc]
+    def ram_read(self, address: int) -> int:
+        return self.ram[address]
 
-    def ram_write(self, value: int, pc: int):
-        self.ram[pc] = value
+    def ram_write(self, value: int, address: int):
+        self.ram[address] = value
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -75,6 +111,15 @@ class CPU:
 
         print()
 
+    def set_next_state(self) -> bool:
+        self.pc += 1
+        try:
+            self.ir = self.ram_read(self.pc)
+            
+        except IndexError:
+            return False
+
     def run(self):
         """Run the CPU."""
-        pass
+        while self.set_next_state():
+            pass
