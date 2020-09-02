@@ -6,9 +6,9 @@ from typing import List
 class CPU:
     """Main CPU class."""
 
-    LESS_THAN_BIT_MASK    = 0b00000100
+    LESS_THAN_BIT_MASK = 0b00000100
     GREATER_THAN_BIT_MASK = 0b00000010
-    EQUAL_TO_BIT_MASK     = 0b00000001
+    EQUAL_TO_BIT_MASK = 0b00000001
 
     def __init__(self):
         """Construct a new CPU."""
@@ -17,11 +17,11 @@ class CPU:
         # reg[5] IM or interrupt mask
         # reg[6] IS or interrupt status
         # reg[7] SP or stack pointer
-        self.pc: int = 0 # program counter address
-        self.ir: int = 0 # instruction register data
         self.mar: int = 0 # memory address register
-        self.mdr: int = 0 # memory data register
-        self.fl: int = 0 # flags bitfield 00000LGE
+        self.mdr: int = self.ram_read(self.mar) # memory data register
+        self.pc: int = self.mar # program counter address
+        self.ir: int = self.ram_read(self.pc) # instruction register data
+        self.fl: int = 0b00000000
 
         self.commands = {
             0x00: self.no_op,
@@ -83,7 +83,8 @@ class CPU:
 
     def get_next(self) -> int:
         self.mar += 1
-        return self.ram_read(self.mar)
+        self.mdr = self.ram_read(self.mar)
+        return self.mdr
 
     def no_op(self):
         pass
