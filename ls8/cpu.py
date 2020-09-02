@@ -188,10 +188,16 @@ class CPU:
 
 
     def ldi(self):
-        self.reg[self.get_next()] = self.get_next()
+        a = self.get_next()
+        b = self.get_next()
+        self.reg[a] = b
+        # self.reg[self.get_next()] = self.get_next() # apparently this doesn't work, not entirely sure why
 
     def ld(self):
-        self.reg[self.get_next()] = self.reg[self.get_next()]
+        a = self.get_next()
+        b = self.get_next()
+        self.reg[a] = self.reg[b]
+        # self.reg[self.get_next()] = self.reg[self.get_next()] # same goes for this one
 
     def store(self):
         pass
@@ -204,11 +210,26 @@ class CPU:
 
         # For now, we've just hardcoded a program:
 
+        # program = [
+        #     # From print8.ls8
+        #     0b10000010, # LDI R0,8
+        #     0b00000000,
+        #     0b00001000,
+        #     0b01000111, # PRN R0
+        #     0b00000000,
+        #     0b00000001, # HLT
+        # ]
         program = [
             # From print8.ls8
             0b10000010, # LDI R0,8
             0b00000000,
             0b00001000,
+            0b10000010, # LDI R1,2
+            0b00000001,
+            0b00000010,
+            0b10100010, # MUL R0,R1
+            0b00000000,
+            0b00000001,
             0b01000111, # PRN R0
             0b00000000,
             0b00000001, # HLT
@@ -254,19 +275,19 @@ class CPU:
     def run_next_command(self) -> bool:
         self.mar += 1
         self.pc = self.mar
-        try:
-            self.ir = self.ram_read(self.pc)
-            self.commands[self.ir]()
-        except IndexError:
-            return False
-        except KeyError:
-            return False
-        return True
+        self.mdr = self.ram_read(self.mar)
+        self.ir = self.ram_read(self.pc)
+        self.commands[self.ir]()
 
     def run(self):
         """Run the CPU."""
         try:
-            while self.run_next_command():
-                pass
+            self.mar = -1
+            while True:
+                self.run_next_command()
+        except IndexError:
+            pass
+        except KeyError:
+            pass
         except CPU.HaltExcpetion:
             pass
