@@ -5,43 +5,6 @@ from typing import List
 
 class CPU:
     """Main CPU class."""
-    commands = {
-        0x00, # NOP  0
-        0x01, # HLT  0
-        0x11, # RET  0
-        0x13, # IRET 0
-        0x45, # PUSH 1
-        0x46, # POP  1
-        0x47, # PRN  1
-        0x48, # PRA  1
-        0x50, # CALL 1
-        0x52, # INT  1
-        0x54, # JMP  1
-        0x55, # JEQ  1
-        0x56, # JNE  1
-        0x57, # JGT  1
-        0x58, # JLT  1
-        0x59, # JLE  1
-        0x5A, # JGE  1
-        0x65, # INC  1
-        0x66, # DEC  1
-        0x69, # NOT  1
-        0x82, # LDI  2
-        0x83, # LD   2
-        0x84, # ST   2
-        0xA0, # ADD  2
-        0xA1, # SUB  2
-        0xA2, # MUL  2
-        0xA3, # DIV  2
-        0xA4, # MOD  2
-        0xA7, # CMP  2
-        0xA8, # AND  1
-        0xAA, # OR   2
-        0xAB, # XOR  2
-        0xAC, # SHL  2
-        0xAD, # SHR  2
-    }
-
     def __init__(self):
         """Construct a new CPU."""
         self.ram: List[int] = [0] * 256
@@ -54,6 +17,64 @@ class CPU:
         self.mar: int = 0 # memory address register
         self.mdr: int = 0 # memory data register
         self.fl: int = 0 # flags bitfield 00000LGE
+
+        self.commands = {
+            0x00: self.no_op, # NOP  0
+            0x01: self.halt, # HLT  0
+            0x11: self.return_from_subroutine, # RET  0
+            0x13: self.return_from_interrupt_handler, # IRET 0
+            0x45: self.push, # PUSH 1
+            0x46: self.pop, # POP  1
+            0x47: self.print_number, # PRN  1
+            0x48, # PRA  1
+            0x50, # CALL 1
+            0x52, # INT  1
+            0x54, # JMP  1
+            0x55, # JEQ  1
+            0x56, # JNE  1
+            0x57, # JGT  1
+            0x58, # JLT  1
+            0x59, # JLE  1
+            0x5A, # JGE  1
+            0x65, # INC  1
+            0x66, # DEC  1
+            0x69, # NOT  1
+            0x82, # LDI  2
+            0x83, # LD   2
+            0x84, # ST   2
+            0xA0, # ADD  2
+            0xA1, # SUB  2
+            0xA2, # MUL  2
+            0xA3, # DIV  2
+            0xA4, # MOD  2
+            0xA7, # CMP  2
+            0xA8, # AND  1
+            0xAA, # OR   2
+            0xAB, # XOR  2
+            0xAC, # SHL  2
+            0xAD, # SHR  2
+        }
+
+    def no_op(self):
+        pass
+
+    def halt(self):
+        pass
+
+    def return_from_subroutine(self):
+        pass
+
+    def return_from_interrupt_handler(self):
+        pass
+
+    def push(self):
+        pass
+
+    def pop(self):
+        pass
+
+    def print_number(self, register: int):
+        pass
 
     def load(self):
         """Load a program into memory."""
@@ -112,10 +133,11 @@ class CPU:
         print()
 
     def set_next_state(self) -> bool:
-        self.pc += 1
+        self.mar += 1
+        self.pc = self.mar
         try:
             self.ir = self.ram_read(self.pc)
-            
+            self.commands[self.ir]()
         except IndexError:
             return False
 
