@@ -112,22 +112,22 @@ class CPU:
 
 
     def increment(self, address: int, _):
-        self.reg[address] += 1
+        self.reg[address] = (self.reg[address] + 1) & 0xFF
 
     def decrement(self, address: int, _):
-        self.reg[address] -= 1
+        self.reg[address] = (self.reg[address] - 1) & 0xFF
 
     def alu_not(self, address: int, _):
         self.reg[address] = ~self.reg[address]
 
     def add(self, address_a: int, address_b: int):
-        self.reg[address_a] += self.reg[address_b]
+        self.reg[address_a] = (self.reg[address_a] + self.reg[address_b]) & 0xFF
 
     def subtract(self, address_a: int, address_b: int):
-        self.reg[address_a] -= self.reg[address_b]
+        self.reg[address_a] = (self.reg[address_a] - self.reg[address_b]) & 0xFF
 
     def multiply(self, address_a: int, address_b: int):
-        self.reg[address_a] *= self.reg[address_b]
+        self.reg[address_a] = (self.reg[address_a] * self.reg[address_b]) & 0xFF
 
     def divide(self, address_a: int, address_b: int):
         self.reg[address_a] //= self.reg[address_b]
