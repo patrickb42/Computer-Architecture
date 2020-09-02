@@ -1,7 +1,7 @@
 """CPU functionality."""
 
 import sys
-from typing import List
+from typing import Dict, List, Optional
 
 class CPU:
     """Main CPU class."""
@@ -23,7 +23,7 @@ class CPU:
         self.ir: int = self.ram_read(self.pc) # instruction register data
         self.fl: int = 0b00000000
 
-        self.commands = {
+        self.commands: Dict[int, callable] = {
             0x00: self.no_op,
             0x01: self.halt,
             0x11: self.return_from_subroutine,
@@ -60,7 +60,7 @@ class CPU:
             0xAD: lambda: self.alu('SHR', self.get_next(), self.get_next()),
         }
 
-        self.alu_ops = {
+        self.alu_ops: Dict[str, callable] = {
             'INC': self.increment,
             'DEC': self.decrement,
             'NOT': self.alu_not,
@@ -111,31 +111,31 @@ class CPU:
         print(chr(self.reg[self.get_next()]))
 
 
-    def increment(self, address, _):
+    def increment(self, address: int, _):
         self.reg[address] += 1
 
-    def decrement(self, address, _):
+    def decrement(self, address: int, _):
         self.reg[address] -= 1
 
-    def alu_not(self, address, _):
+    def alu_not(self, address: int, _):
         self.reg[address] = ~self.reg[address]
 
-    def add(self, address_a, address_b):
+    def add(self, address_a: int, address_b: int):
         self.reg[address_a] += self.reg[address_b]
 
-    def subtract(self, address_a, address_b):
+    def subtract(self, address_a: int, address_b: int):
         self.reg[address_a] -= self.reg[address_b]
 
-    def multiply(self, address_a, address_b):
+    def multiply(self, address_a: int, address_b: int):
         self.reg[address_a] *= self.reg[address_b]
 
-    def divide(self, address_a, address_b):
-        self.reg[address_a] /= self.reg[address_b]
+    def divide(self, address_a: int, address_b: int):
+        self.reg[address_a] //= self.reg[address_b]
 
-    def mod(self, address_a, address_b):
+    def mod(self, address_a: int, address_b: int):
         self.reg[address_a] %= self.reg[address_b]
 
-    def compare(self, address_a, address_b):
+    def compare(self, address_a: int, address_b: int):
         if self.reg[address_a] == self.reg[address_b]:
             self.fl = CPU.EQUAL_TO_BIT_MASK
         elif self.reg[address_a] < self.reg[address_b]:
@@ -143,19 +143,19 @@ class CPU:
         else:
             self.fl = CPU.GREATER_THAN_BIT_MASK
 
-    def bit_and(self, address_a, address_b):
+    def bit_and(self, address_a: int, address_b: int):
         self.reg[address_a] &= self.reg[address_b]
 
-    def bit_or(self, address_a, address_b):
+    def bit_or(self, address_a: int, address_b: int):
         self.reg[address_a] |= self.reg[address_b]
 
-    def bit_xor(self, address_a, address_b):
+    def bit_xor(self, address_a: int, address_b: int):
         self.reg[address_a] ^= self.reg[address_b]
 
-    def shift_left(self, address_a, address_b):
+    def shift_left(self, address_a: int, address_b: int):
         self.reg[address_a] <<= self.reg[address_b]
 
-    def shift_right(self, address_a, address_b):
+    def shift_right(self, address_a: int, address_b: int):
         self.reg[address_a] >>= self.reg[address_b]
 
 
@@ -224,7 +224,7 @@ class CPU:
     def ram_write(self, value: int, address: int):
         self.ram[address] = value
 
-    def alu(self, op, reg_a, reg_b=None):
+    def alu(self, op: str, reg_a: int, reg_b: Optional[int] = None):
         """ALU operations."""
         try:
             self.alu_ops[op](reg_a, reg_b)
