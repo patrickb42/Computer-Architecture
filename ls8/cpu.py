@@ -10,27 +10,29 @@ class CPU:
     GREATER_THAN_BIT_MASK = 0b00000010
     EQUAL_TO_BIT_MASK = 0b00000001
 
+    MAX_8_BIT_VALUE = 0xFF
+    TOP_OF_STACK_ADDRESS = 0xF4
+
     def __init__(self):
         """Construct a new CPU."""
         self.ram: List[int] = [0] * 256
-        self.reg: List[int] = [0] * 8
-        self.reg[7] = 0xF4
-        # reg[5] IM or interrupt mask
-        # reg[6] IS or interrupt status
-        # reg[7] SP or stack pointer
-        self.mar: int = 0 # memory address register
-        self.mdr: int = self.ram_read(self.mar) # memory data register
-        self.pc: int = self.mar # program counter address
-        self.ir: int = self.ram_read(self.pc) # instruction register data
+        self.reg: List[int] = [0] * 5
+        self.interrupt_mask: int = 0x00 # reg 5
+        self.interrupt_status: int = 0x00 # reg 6
+        self.stack_pointer: int = CPU.TOP_OF_STACK_ADDRESS # reg 7
+        self.mem_adr_reg: int = 0 # mar
+        self.mem_data_reg: int = self.ram_read(self.mem_adr_reg) # mdr
+        self.program_counter_adr: int = self.mem_adr_reg # pc
+        self.instruction_reg_data: int = self.ram_read(self.program_counter_adr) # ir
         self.fl: int = 0b00000000
 
         self.commands: Dict[int, callable] = {
             0x00: self.no_op,
             0x01: self.halt,
-            0x11: self.return_from_subroutine,
-            0x13: self.return_from_interrupt_handler,
-            0x45: self.push,
-            0x46: self.pop,
+            0x11: self.return_from_subroutine, # finish
+            0x13: self.return_from_interrupt_handler, # finish
+            0x45: self.push, # finish
+            0x46: self.pop, # finish
             0x47: self.print_number,
             0x48: self.print_alpha,
             0x50: lambda _: _, # CALL 1 finish
@@ -47,7 +49,7 @@ class CPU:
             0x69: lambda: self.alu('NOT', self.get_next()),
             0x82: self.ldi,
             0x83: self.ld,
-            0x84: self.store,
+            0x84: self.store, # finish
             0xA0: lambda: self.alu('ADD', self.get_next(), self.get_next()),
             0xA1: lambda: self.alu('SUB', self.get_next(), self.get_next()),
             0xA2: lambda: self.alu('MUL', self.get_next(), self.get_next()),
@@ -83,9 +85,9 @@ class CPU:
             super().__init__(message)
 
     def get_next(self) -> int:
-        self.mar += 1
-        self.mdr = self.ram_read(self.mar)
-        return self.mdr
+        self.mem_adr_reg += 1
+        self.mem_data_reg = self.ram_read(self.mem_adr_reg)
+        return self.mem_data_reg
 
     def no_op(self):
         pass
@@ -100,10 +102,16 @@ class CPU:
         pass
 
     def push(self):
-        pass
+        reg: int = self.get_next()
+        self.stack_pointer -= 1
+        self.ram[self.stack_pointer] = self.reg[reg]
 
     def pop(self):
-        pass
+        if self.stack_pointer == CPU.TOP_OF_STACK_ADDRESS:
+            raise Exception('cannot pop from empty stack')
+        reg: int = self.get_next()
+        self.reg[reg] = self.ram[self.stack_pointer]
+        self.stack_pointer += 1
 
     def print_number(self):
         print(self.reg[self.get_next()])
@@ -113,22 +121,22 @@ class CPU:
 
 
     def increment(self, address: int, _):
-        self.reg[address] = (self.reg[address] + 1) & 0xFF
+        self.reg[address] = (self.reg[address] + 1) & CPU.MAX_8_BIT_VALUE
 
     def decrement(self, address: int, _):
-        self.reg[address] = (self.reg[address] - 1) & 0xFF
+        self.reg[address] = (self.reg[address] - 1) & CPU.MAX_8_BIT_VALUE
 
     def alu_not(self, address: int, _):
         self.reg[address] = ~self.reg[address]
 
     def add(self, address_a: int, address_b: int):
-        self.reg[address_a] = (self.reg[address_a] + self.reg[address_b]) & 0xFF
+        self.reg[address_a] = (self.reg[address_a] + self.reg[address_b]) & CPU.MAX_8_BIT_VALUE
 
     def subtract(self, address_a: int, address_b: int):
-        self.reg[address_a] = (self.reg[address_a] - self.reg[address_b]) & 0xFF
+        self.reg[address_a] = (self.reg[address_a] - self.reg[address_b]) & CPU.MAX_8_BIT_VALUE
 
     def multiply(self, address_a: int, address_b: int):
-        self.reg[address_a] = (self.reg[address_a] * self.reg[address_b]) & 0xFF
+        self.reg[address_a] = (self.reg[address_a] * self.reg[address_b]) & CPU.MAX_8_BIT_VALUE
 
     def divide(self, address_a: int, address_b: int):
         self.reg[address_a] //= self.reg[address_b]
@@ -161,7 +169,7 @@ class CPU:
 
 
     def jump(self):
-        self.mar = self.reg[self.get_next()] - 1
+        self.mem_adr_reg = self.reg[self.get_next()] - 1
 
     def jump_if_equal_to(self):
         if self.fl & CPU.EQUAL_TO_BIT_MASK:
@@ -207,10 +215,10 @@ class CPU:
     def copy(self):
         result = CPU()
         result.reg = self.reg[:]
-        result.mar = self.mar
-        result.mdr = self.mdr
-        result.pc = self.pc
-        result.ir = self.ir
+        result.mem_adr_reg = self.mem_adr_reg
+        result.mem_data_reg = self.mem_data_reg
+        result.program_counter_adr = self.program_counter_adr
+        result.instruction_reg_data = self.instruction_reg_data
         result.fl = self.fl
         return result
 
@@ -244,12 +252,12 @@ class CPU:
         """
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
+            self.program_counter_adr,
             #self.fl,
             #self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + b'x1'),
-            self.ram_read(self.pc + b'x2'),
+            self.ram_read(self.program_counter_adr),
+            self.ram_read(self.program_counter_adr + b'x1'),
+            self.ram_read(self.program_counter_adr + b'x2'),
         ), end='')
 
         for i in range(8):
@@ -258,16 +266,16 @@ class CPU:
         print()
 
     def run_next_command(self) -> bool:
-        self.mar += 1
-        self.pc = self.mar
-        self.mdr = self.ram_read(self.mar)
-        self.ir = self.ram_read(self.pc)
-        self.commands[self.ir]()
+        self.mem_adr_reg += 1
+        self.program_counter_adr = self.mem_adr_reg
+        self.mem_data_reg = self.ram_read(self.mem_adr_reg)
+        self.instruction_reg_data = self.ram_read(self.program_counter_adr)
+        self.commands[self.instruction_reg_data]()
 
     def run(self):
         """Run the CPU."""
         try:
-            self.mar = -1
+            self.mem_adr_reg = -1
             while True:
                 self.run_next_command()
         except IndexError:
