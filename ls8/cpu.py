@@ -11,15 +11,16 @@ class CPU:
     EQUAL_TO_BIT_MASK = 0b00000001
 
     MAX_8_BIT_VALUE = 0xFF
-    TOP_OF_STACK_ADDRESS = 0xF4
+    BOTTOM_OF_STACK_ADDRESS = 0xF4
 
     def __init__(self):
         """Construct a new CPU."""
+        self.instructions_size: int = 0
         self.ram: List[int] = [0] * 256
         self.reg: List[int] = [0] * 5
         self.interrupt_mask: int = 0x00 # reg 5
         self.interrupt_status: int = 0x00 # reg 6
-        self.stack_pointer: int = CPU.TOP_OF_STACK_ADDRESS # reg 7
+        self.stack_pointer: int = CPU.BOTTOM_OF_STACK_ADDRESS # reg 7
         self.mem_adr_reg: int = 0 # mar
         self.mem_data_reg: int = self.ram_read(self.mem_adr_reg) # mdr
         self.program_counter_adr: int = self.mem_adr_reg # pc
@@ -31,8 +32,8 @@ class CPU:
             0x01: self.halt,
             0x11: self.return_from_subroutine, # finish
             0x13: self.return_from_interrupt_handler, # finish
-            0x45: self.push, # finish
-            0x46: self.pop, # finish
+            0x45: self.push,
+            0x46: self.pop,
             0x47: self.print_number,
             0x48: self.print_alpha,
             0x50: lambda _: _, # CALL 1 finish
@@ -104,10 +105,12 @@ class CPU:
     def push(self):
         reg: int = self.get_next()
         self.stack_pointer -= 1
+        if self.stack_pointer <= self.instructions_size:
+            raise Exception('stack overflow')
         self.ram[self.stack_pointer] = self.reg[reg]
 
     def pop(self):
-        if self.stack_pointer == CPU.TOP_OF_STACK_ADDRESS:
+        if self.stack_pointer == CPU.BOTTOM_OF_STACK_ADDRESS:
             raise Exception('cannot pop from empty stack')
         reg: int = self.get_next()
         self.reg[reg] = self.ram[self.stack_pointer]
@@ -228,10 +231,14 @@ class CPU:
             raise Exception('use: python ls8.py <ls8 file>')
 
         with open(sys.argv[1]) as file_pointer:
-            lines = file_pointer.readlines()
+            lines: List[str] = file_pointer.readlines()
+            
             for index, line in enumerate(lines):
                 instruction: str = line.split()[0]
                 if instruction[0] is not '#':
+                    self.instructions_size += 1
+                    if self.instructions_size >= CPU.BOTTOM_OF_STACK_ADDRESS:
+                        raise Exception('program to large to load into RAM')
                     self.ram[index] = int(instruction, 2)
 
     def ram_read(self, address: int) -> int:
