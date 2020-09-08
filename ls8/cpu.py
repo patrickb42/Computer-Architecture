@@ -230,7 +230,9 @@ class CPU:
         with open(sys.argv[1]) as file_pointer:
             lines = file_pointer.readlines()
             for index, line in enumerate(lines):
-                self.ram[index] = int(line.split()[0], 2)
+                instruction: str = line.split()[0]
+                if instruction[0] is not '#':
+                    self.ram[index] = int(instruction, 2)
 
     def ram_read(self, address: int) -> int:
         return self.ram[address]
