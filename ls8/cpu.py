@@ -50,7 +50,7 @@ class CPU:
             0x69: lambda: self.alu('NOT', self.get_next()),
             0x82: self.ldi,
             0x83: self.ld,
-            0x84: self.store, # finish
+            0x84: self.store,
             0xA0: lambda: self.alu('ADD', self.get_next(), self.get_next()),
             0xA1: lambda: self.alu('SUB', self.get_next(), self.get_next()),
             0xA2: lambda: self.alu('MUL', self.get_next(), self.get_next()),
@@ -171,48 +171,56 @@ class CPU:
         self.reg[address_a] >>= self.reg[address_b]
 
 
-    def jump(self):
-        self.mem_adr_reg = self.reg[self.get_next()] - 1
+    def jump(self, reg: int = None):
+        self.mem_adr_reg = self.reg[reg if reg is not None else self.get_next()] - 1
 
     def jump_if_equal_to(self):
+        next_reg: int = self.get_next()
         if self.fl & CPU.EQUAL_TO_BIT_MASK:
-            self.jump()
+            self.jump(next_reg)
 
     def jump_if_not_equal_to(self):
+        next_reg: int = self.get_next()
         if self.fl & ~CPU.EQUAL_TO_BIT_MASK:
-            self.jump()
+            self.jump(next_reg)
 
     def jump_if_greater_than(self):
+        next_reg: int = self.get_next()
         if self.fl & CPU.GREATER_THAN_BIT_MASK:
-            self.jump()
+            self.jump(next_reg)
 
     def jump_if_less_than(self):
+        next_reg: int = self.get_next()
         if self.fl & CPU.LESS_THAN_BIT_MASK:
-            self.jump()
+            self.jump(next_reg)
 
     def jump_if_less_than_or_equal_to(self):
+        next_reg: int = self.get_next()
         if self.fl & (CPU.LESS_THAN_BIT_MASK | CPU.EQUAL_TO_BIT_MASK):
-            self.jump()
+            self.jump(next_reg)
 
     def jump_if_greater_than_or_equal_to(self):
+        next_reg: int = self.get_next()
         if self.fl & (CPU.GREATER_THAN_BIT_MASK | CPU.EQUAL_TO_BIT_MASK):
-            self.jump()
+            self.jump(next_reg)
 
 
     def ldi(self):
-        a = self.get_next()
-        b = self.get_next()
+        a: int = self.get_next()
+        b: int = self.get_next()
         self.reg[a] = b
         # self.reg[self.get_next()] = self.get_next() # apparently this doesn't work, not entirely sure why
 
     def ld(self):
-        a = self.get_next()
-        b = self.get_next()
+        a: int = self.get_next()
+        b: int = self.get_next()
         self.reg[a] = self.reg[b]
         # self.reg[self.get_next()] = self.reg[self.get_next()] # same goes for this one
 
     def store(self):
-        pass
+        a: int = self.get_next()
+        b: int = self.get_next()
+        self.ram_write(self.reg[a], self.ram[self.reg[b]])
 
 
     def copy(self):
@@ -232,14 +240,14 @@ class CPU:
 
         with open(sys.argv[1]) as file_pointer:
             lines: List[str] = file_pointer.readlines()
-            
-            for index, line in enumerate(lines):
+
+            for line in lines:
                 instruction: str = line.split()[0]
-                if instruction[0] is not '#':
-                    self.instructions_size += 1
+                if instruction[0] != '#':
                     if self.instructions_size >= CPU.BOTTOM_OF_STACK_ADDRESS:
                         raise Exception('program to large to load into RAM')
-                    self.ram[index] = int(instruction, 2)
+                    self.ram[self.instructions_size] = int(instruction, 2)
+                    self.instructions_size += 1
 
     def ram_read(self, address: int) -> int:
         return self.ram[address]
@@ -260,17 +268,21 @@ class CPU:
         from run() if you need help debugging.
         """
 
-        print(f"TRACE: %02X | %02X %02X %02X |" % (
+        print(f"TRACE: %02X | %02X %02X %02X %02X |" % (
             self.program_counter_adr,
-            #self.fl,
+            self.fl,
             #self.ie,
             self.ram_read(self.program_counter_adr),
-            self.ram_read(self.program_counter_adr + b'x1'),
-            self.ram_read(self.program_counter_adr + b'x2'),
+            self.ram_read(self.program_counter_adr + 1),
+            self.ram_read(self.program_counter_adr + 2),
         ), end='')
 
-        for i in range(8):
+        for i in range(5):
             print(" %02X" % self.reg[i], end='')
+
+        print(" %02X" % self.interrupt_mask, end='')
+        print(" %02X" % self.interrupt_status, end='')
+        print(" %02X" % self.stack_pointer, end='')
 
         print()
 
@@ -279,6 +291,7 @@ class CPU:
         self.program_counter_adr = self.mem_adr_reg
         self.mem_data_reg = self.ram_read(self.mem_adr_reg)
         self.instruction_reg_data = self.ram_read(self.program_counter_adr)
+        # self.trace()
         self.commands[self.instruction_reg_data]()
 
     def run(self):
@@ -287,11 +300,11 @@ class CPU:
             self.mem_adr_reg = -1
             while True:
                 self.run_next_command()
-        except IndexError:
-            pass
-        except KeyError:
-            pass
+        # except IndexError as error:
+        #     print(error)
+        # except KeyError as error:
+        #     print(error)
         except CPU.HaltExcpetion:
             pass
         except Exception as error:
-            print(error)
+            print('error')
