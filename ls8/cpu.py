@@ -30,13 +30,13 @@ class CPU:
         self.commands: Dict[int, callable] = {
             0x00: self.no_op,
             0x01: self.halt,
-            0x11: self.return_from_subroutine, # finish
+            0x11: self.return_from_subroutine,
             0x13: self.return_from_interrupt_handler, # finish
             0x45: self.push,
             0x46: self.pop,
             0x47: self.print_number,
             0x48: self.print_alpha,
-            0x50: lambda _: _, # CALL 1 finish
+            0x50: self.call,
             0x52: lambda _: _, # INT  1 finish
             0x54: self.jump,
             0x55: self.jump_if_equal_to,
@@ -96,8 +96,18 @@ class CPU:
     def halt(self):
         raise CPU.HaltExcpetion('halted')
 
+    def call(self):
+        self.stack_pointer -= 1
+        self.ram[self.stack_pointer] = self.mem_adr_reg + 1
+        if self.stack_pointer <= self.instructions_size:
+            raise Exception('stack overflow')
+        self.jump()
+
     def return_from_subroutine(self):
-        pass
+        if self.stack_pointer >= CPU.BOTTOM_OF_STACK_ADDRESS:
+            raise Exception('cannot pop from empty stack')
+        self.mem_adr_reg = self.ram[self.stack_pointer]
+        self.stack_pointer += 1
 
     def return_from_interrupt_handler(self):
         pass
@@ -110,7 +120,7 @@ class CPU:
         self.ram[self.stack_pointer] = self.reg[reg]
 
     def pop(self):
-        if self.stack_pointer == CPU.BOTTOM_OF_STACK_ADDRESS:
+        if self.stack_pointer >= CPU.BOTTOM_OF_STACK_ADDRESS:
             raise Exception('cannot pop from empty stack')
         reg: int = self.get_next()
         self.reg[reg] = self.ram[self.stack_pointer]
@@ -308,3 +318,4 @@ class CPU:
             pass
         except Exception as error:
             print('error')
+            # print(error)
