@@ -127,58 +127,61 @@ class CPU:
         self.stack_pointer += 1
 
     def print_number(self):
-        print(self.reg[self.get_next()])
+        print(self.reg[self.get_next()], end='')
 
     def print_alpha(self):
-        print(chr(self.reg[self.get_next()]))
+        print(chr(self.reg[self.get_next()]), end='')
 
 
-    def increment(self, address: int, _):
-        self.reg[address] = (self.reg[address] + 1) & CPU.MAX_8_BIT_VALUE
+    def increment(self, reg_address: int, _):
+        self.reg[reg_address] = (self.reg[reg_address] + 1) & CPU.MAX_8_BIT_VALUE
 
-    def decrement(self, address: int, _):
-        self.reg[address] = (self.reg[address] - 1) & CPU.MAX_8_BIT_VALUE
+    def decrement(self, reg_address: int, _):
+        self.reg[reg_address] = (self.reg[reg_address] - 1) & CPU.MAX_8_BIT_VALUE
 
-    def alu_not(self, address: int, _):
-        self.reg[address] = ~self.reg[address]
+    def alu_not(self, reg_address: int, _):
+        self.reg[reg_address] = ~self.reg[reg_address]
 
-    def add(self, address_a: int, address_b: int):
-        self.reg[address_a] = (self.reg[address_a] + self.reg[address_b]) & CPU.MAX_8_BIT_VALUE
+    def add(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] = (self.reg[reg_address_a] + self.reg[address_b])\
+            & CPU.MAX_8_BIT_VALUE
 
-    def subtract(self, address_a: int, address_b: int):
-        self.reg[address_a] = (self.reg[address_a] - self.reg[address_b]) & CPU.MAX_8_BIT_VALUE
+    def subtract(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] = (self.reg[reg_address_a] - self.reg[address_b])\
+            & CPU.MAX_8_BIT_VALUE
 
-    def multiply(self, address_a: int, address_b: int):
-        self.reg[address_a] = (self.reg[address_a] * self.reg[address_b]) & CPU.MAX_8_BIT_VALUE
+    def multiply(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] = (self.reg[reg_address_a] * self.reg[address_b])\
+            & CPU.MAX_8_BIT_VALUE
 
-    def divide(self, address_a: int, address_b: int):
-        self.reg[address_a] //= self.reg[address_b]
+    def divide(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] //= self.reg[address_b]
 
-    def mod(self, address_a: int, address_b: int):
-        self.reg[address_a] %= self.reg[address_b]
+    def mod(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] %= self.reg[address_b]
 
-    def compare(self, address_a: int, address_b: int):
-        if self.reg[address_a] == self.reg[address_b]:
+    def compare(self, reg_address_a: int, address_b: int):
+        if self.reg[reg_address_a] == self.reg[address_b]:
             self.fl = CPU.EQUAL_TO_BIT_MASK
-        elif self.reg[address_a] < self.reg[address_b]:
+        elif self.reg[reg_address_a] < self.reg[address_b]:
             self.fl = CPU.LESS_THAN_BIT_MASK
         else:
             self.fl = CPU.GREATER_THAN_BIT_MASK
 
-    def bit_and(self, address_a: int, address_b: int):
-        self.reg[address_a] &= self.reg[address_b]
+    def bit_and(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] &= self.reg[address_b]
 
-    def bit_or(self, address_a: int, address_b: int):
-        self.reg[address_a] |= self.reg[address_b]
+    def bit_or(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] |= self.reg[address_b]
 
-    def bit_xor(self, address_a: int, address_b: int):
-        self.reg[address_a] ^= self.reg[address_b]
+    def bit_xor(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] ^= self.reg[address_b]
 
-    def shift_left(self, address_a: int, address_b: int):
-        self.reg[address_a] <<= self.reg[address_b]
+    def shift_left(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] <<= self.reg[address_b]
 
-    def shift_right(self, address_a: int, address_b: int):
-        self.reg[address_a] >>= self.reg[address_b]
+    def shift_right(self, reg_address_a: int, address_b: int):
+        self.reg[reg_address_a] >>= self.reg[address_b]
 
 
     def jump(self, reg: int = None):
@@ -224,7 +227,7 @@ class CPU:
     def ld(self):
         a: int = self.get_next()
         b: int = self.get_next()
-        self.reg[a] = self.reg[b]
+        self.reg[a] = self.ram_read(self.reg[b])
         # self.reg[self.get_next()] = self.reg[self.get_next()] # same goes for this one
 
     def store(self):
@@ -278,7 +281,7 @@ class CPU:
         from run() if you need help debugging.
         """
 
-        print(f"TRACE: %02X | %02X %02X %02X %02X |" % (
+        print(f"TRACE: pc: %02X | %02X %02X %02X %02X |" % (
             self.program_counter_adr,
             self.fl,
             #self.ie,
@@ -290,9 +293,10 @@ class CPU:
         for i in range(5):
             print(" %02X" % self.reg[i], end='')
 
-        print(" %02X" % self.interrupt_mask, end='')
-        print(" %02X" % self.interrupt_status, end='')
-        print(" %02X" % self.stack_pointer, end='')
+        print(" im: %02X" % self.interrupt_mask, end='')
+        print(" is: %02X" % self.interrupt_status, end='')
+        print(" sp: %02X" % self.stack_pointer, end='')
+        print(self.commands[self.ram_read(self.program_counter_adr)], end='')
 
         print()
 
