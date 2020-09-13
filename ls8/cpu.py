@@ -255,12 +255,14 @@ class CPU:
             lines: List[str] = file_pointer.readlines()
 
             for line in lines:
-                instruction: str = line.split()[0]
-                if instruction[0] != '#':
+                try:
+                    instruction: str = line.split()[0]
                     if self.instructions_size >= CPU.BOTTOM_OF_STACK_ADDRESS:
                         raise Exception('program to large to load into RAM')
                     self.ram[self.instructions_size] = int(instruction, 2)
                     self.instructions_size += 1
+                except Exception:
+                    pass
 
     def ram_read(self, address: int) -> int:
         return self.ram[address]
