@@ -127,7 +127,7 @@ class CPU:
         self.stack_pointer += 1
 
     def print_number(self):
-        print(self.reg[self.get_next()], end='')
+        print(self.reg[self.get_next()])
 
     def print_alpha(self):
         print(chr(self.reg[self.get_next()]), end='')
