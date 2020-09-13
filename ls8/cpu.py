@@ -259,8 +259,10 @@ class CPU:
                     instruction: str = line.split()[0]
                     if self.instructions_size >= CPU.BOTTOM_OF_STACK_ADDRESS:
                         raise Exception('program to large to load into RAM')
-                    self.ram[self.instructions_size] = int(instruction, 2)
-                    self.instructions_size += 1
+                    instruction_number_value = int(instruction, 2)
+                    if instruction_number_value <= CPU.MAX_8_BIT_VALUE:
+                        self.ram[self.instructions_size] = instruction_number_value
+                        self.instructions_size += 1
                 except Exception:
                     pass
 
